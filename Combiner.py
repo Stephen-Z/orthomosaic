@@ -26,6 +26,7 @@ class Combiner:
 	def createMosaic(self):
 		for i in range(1,len(self.imageList)):
 			self.combine(i)
+			print("Processing photo "+str(i))
 		return self.resultImage
 
 	def combine(self, index2):
@@ -59,9 +60,9 @@ class Combiner:
 		keypoints1Im = np.zeros(np.size(image1))
 		keypoints2Im = np.zeros(np.size(image2))
 		cv2.drawKeypoints(image1,kp1, keypoints1Im,color=(0,0,255))
-		util.display("KEYPOINTS",keypoints1Im)
+		# util.display("KEYPOINTS",keypoints1Im)
 		cv2.drawKeypoints(image2,kp2,keypoints2Im,color=(0,0,255))
-		util.display("KEYPOINTS",keypoints2Im)
+		# util.display("KEYPOINTS",keypoints2Im)
 
 		matcher = cv2.BFMatcher() #use brute force matching
 		matches = matcher.knnMatch(descriptors2,descriptors1, k=2) #find pairs of nearest matches
@@ -74,7 +75,7 @@ class Combiner:
 
 		#Visualize matches
 		matchDrawing = util.drawMatches(gray2,kp2,gray1,kp1,matches)
-		util.display("matches",matchDrawing)
+		# util.display("matches",matchDrawing)
 
 		#NumPy syntax for extracting location data from match data structure in matrix form
 		src_pts = np.float32([ kp2[m.queryIdx].pt for m in matches ]).reshape(-1,1,2)
@@ -86,8 +87,9 @@ class Combiner:
 		'''
 		#Deprecated --stephen
 		# A = cv2.estimateRigidTransform(src_pts,dst_pts,fullAffine=False) #false because we only want 5 DOF. we removed 3 DOF when we unrotated
-		A = cv2.estimateAffinePartial2D(src_pts,dst_pts) #false because we only want 5 DOF. we removed 3 DOF when we unrotated
-		if A == None: #RANSAC sometimes fails in estimateRigidTransform(). If so, try full homography. OpenCV RANSAC implementation for homography is more robust.
+		A = cv2.estimateAffinePartial2D(src_pts,dst_pts)[0] #false because we only want 5 DOF. we removed 3 DOF when we unrotated
+		# if A == None: #RANSAC sometimes fails in estimateRigidTransform(). If so, try full homography. OpenCV RANSAC implementation for homography is more robust.
+		if A.size == 0: #RANSAC sometimes fails in estimateRigidTransform(). If so, try full homography. OpenCV RANSAC implementation for homography is more robust.
 			HomogResult = cv2.findHomography(src_pts,dst_pts,method=cv2.RANSAC)
 			H = HomogResult[0]
 
@@ -103,9 +105,10 @@ class Combiner:
 		for i in range(0,4):
 			cornerX = corners2[i,0]
 			cornerY = corners2[i,1]
-			if A != None: #check if we're working with affine transform or perspective transform
-				warpedCorners2[i,0] = A[0,0]*cornerX + A[0,1]*cornerY + A[0,2]
-				warpedCorners2[i,1] = A[1,0]*cornerX + A[1,1]*cornerY + A[1,2]
+			# if A != None: #check if we're working with affine transform or perspective transform
+			if A.size != 0: #check if we're working with affine transform or perspective transform
+				warpedCorners2[i][0] = A[0][0]*cornerX + A[0][1]*cornerY + A[0][2]
+				warpedCorners2[i][1] = A[1][0]*cornerX + A[1][1]*cornerY + A[1][2]
 			else:
 				warpedCorners2[i,0] = (H[0,0]*cornerX + H[0,1]*cornerY + H[0,2])/(H[2,0]*cornerX + H[2,1]*cornerY + H[2,2])
 				warpedCorners2[i,1] = (H[1,0]*cornerX + H[1,1]*cornerY + H[1,2])/(H[2,0]*cornerX + H[2,1]*cornerY + H[2,2])
@@ -116,7 +119,8 @@ class Combiner:
 		'''Compute Image Alignment and Keypoint Alignment'''
 		translation = np.float32(([1,0,-1*xMin],[0,1,-1*yMin],[0,0,1]))
 		warpedResImg = cv2.warpPerspective(self.resultImage, translation, (xMax-xMin, yMax-yMin))
-		if A == None:
+		# if A == None:
+		if A.size == 0:
 			fullTransformation = np.dot(translation,H) #again, images must be translated to be 100% visible in new canvas
 			warpedImage2 = cv2.warpPerspective(image2, fullTransformation, (xMax-xMin, yMax-yMin))
 		else:
@@ -139,7 +143,7 @@ class Combiner:
 		result = warpedResImg + warpedImage2
 		#visualize and save result
 		self.resultImage = result
-		util.display("result",result)
-		cv2.imwrite("results/intermediateResult"+str(index2)+".png",result)
+		# util.display("result",result)
+		# cv2.imwrite("results/intermediateResult"+str(index2)+".png",result)
 		return result
 

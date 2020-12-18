@@ -1,5 +1,5 @@
 import os
-from bs4 import BeautifulSoup
+# from bs4 import BeautifulSoup
 from PIL import Image, ExifTags
 from pymap3d import ecef2enu, geodetic2ecef
 import numpy as np
@@ -78,7 +78,8 @@ def get_data(path):
                     lon0 = longitude
                 x, y, z = geodetic2ecef(latitude, longitude, altitude)
                 x, y, z = ecef2enu(x, y, z, lat0, lon0, h0)
-                yield filename, '{:f}'.format(x), '{:f}'.format(y), '{:f}'.format(z), yaw, pitch+90.0, roll
+                # yield filename, '{:f}'.format(x), '{:f}'.format(y), '{:f}'.format(z), yaw, pitch+90.0, roll
+                yield filename, '{:f}'.format(x), '{:f}'.format(y), '{:f}'.format(z), 0.0, pitch+90.0, roll
 
 
             # with Image.open(filepath) as im:
