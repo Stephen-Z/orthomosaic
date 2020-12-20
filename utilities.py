@@ -28,7 +28,7 @@ def display(title, image):
     cv2.namedWindow(title,cv2.WINDOW_NORMAL)
     cv2.resizeWindow(title,800,600)
     cv2.imshow(title,image)
-    cv2.waitKey(400)
+    cv2.waitKey(0)
     cv2.destroyWindow(title)
 
 def drawMatches(img1, kp1, img2, kp2, matches):
